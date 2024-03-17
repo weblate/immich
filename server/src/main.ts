@@ -3,6 +3,7 @@ import { Worker } from 'node:worker_threads';
 import { ImmichAdminModule } from 'src/app.module';
 import { LogLevel } from 'src/config';
 import { getWorkers } from 'src/utils/workers';
+
 const immichApp = process.argv[2] || process.env.IMMICH_APP;
 
 if (process.argv[2] === immichApp) {

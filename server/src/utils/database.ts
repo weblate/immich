@@ -1,6 +1,10 @@
+import { ExpressionBuilder, sql } from 'kysely';
+import { jsonArrayFrom, jsonObjectFrom } from 'kysely/helpers/postgres';
 import _ from 'lodash';
 import { AssetEntity } from 'src/entities/asset.entity';
+import { TimeBucketSize } from 'src/interfaces/asset.interface';
 import { AssetSearchBuilderOptions } from 'src/interfaces/search.interface';
+import { DB } from 'src/prisma/generated/types';
 import { Between, IsNull, LessThanOrEqual, MoreThanOrEqual, Not, SelectQueryBuilder } from 'typeorm';
 
 /**
@@ -137,3 +141,28 @@ export function searchAssetBuilder(
 
   return builder;
 }
+
+export const withExif = (eb: ExpressionBuilder<DB, 'assets'>) =>
+  jsonObjectFrom(eb.selectFrom('exif').selectAll().whereRef('exif.assetId', '=', 'assets.id')).as('exifInfo');
+
+export const withSmartInfo = (eb: ExpressionBuilder<DB, 'assets'>) =>
+  jsonObjectFrom(eb.selectFrom('smart_info').selectAll().whereRef('smart_info.assetId', '=', 'assets.id')).as(
+    'smartInfo',
+  );
+
+export const withFaces = (eb: ExpressionBuilder<DB, 'assets'>) =>
+  jsonArrayFrom(eb.selectFrom('asset_faces').selectAll().whereRef('asset_faces.assetId', '=', 'assets.id')).as('faces');
+
+export const withPeople = (eb: ExpressionBuilder<DB, 'assets' | 'asset_faces'>) =>
+  jsonObjectFrom(eb.selectFrom('person').selectAll().whereRef('asset_faces.personId', '=', 'person.id')).as('people');
+
+export const withOwner = (eb: ExpressionBuilder<DB, 'assets'>) =>
+  jsonObjectFrom(eb.selectFrom('users').selectAll().whereRef('users.id', '=', 'assets.ownerId')).as('owner');
+
+const truncateMap: Record<TimeBucketSize, string> = {
+  [TimeBucketSize.DAY]: 'day',
+  [TimeBucketSize.MONTH]: 'month',
+};
+
+export const withTimeBucket = (eb: ExpressionBuilder<DB, 'assets'>, size: TimeBucketSize) =>
+  eb.fn('date_trunc', [sql`${truncateMap[size]}`, sql`assets."localDateTime" at time zone 'UTC'`]);

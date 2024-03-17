@@ -66,12 +66,15 @@ describe(TimelineService.name, () => {
           userId: authStub.admin.user.id,
         }),
       ).resolves.toEqual(expect.arrayContaining([expect.objectContaining({ id: 'asset-id' })]));
-      expect(assetMock.getTimeBucket).toHaveBeenCalledWith('bucket', {
-        size: TimeBucketSize.DAY,
-        timeBucket: 'bucket',
-        isArchived: true,
-        userIds: [authStub.admin.user.id],
-      });
+      expect(assetMock.getTimeBucket).toHaveBeenCalledWith(
+        'bucket',
+        expect.objectContaining({
+          size: TimeBucketSize.DAY,
+          timeBucket: 'bucket',
+          isArchived: true,
+          userIds: [authStub.admin.user.id],
+        }),
+      );
     });
 
     it('should return the assets for a library time bucket if user has library.read', async () => {
@@ -84,11 +87,14 @@ describe(TimelineService.name, () => {
           userId: authStub.admin.user.id,
         }),
       ).resolves.toEqual(expect.arrayContaining([expect.objectContaining({ id: 'asset-id' })]));
-      expect(assetMock.getTimeBucket).toHaveBeenCalledWith('bucket', {
-        size: TimeBucketSize.DAY,
-        timeBucket: 'bucket',
-        userIds: [authStub.admin.user.id],
-      });
+      expect(assetMock.getTimeBucket).toHaveBeenCalledWith(
+        'bucket',
+        expect.objectContaining({
+          size: TimeBucketSize.DAY,
+          timeBucket: 'bucket',
+          userIds: [authStub.admin.user.id],
+        }),
+      );
     });
 
     it('should throw an error if withParners is true and isArchived true or undefined', async () => {

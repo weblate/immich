@@ -2,16 +2,16 @@ import { DatabaseExtension } from 'src/interfaces/database.interface';
 import { DataSource } from 'typeorm';
 import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions.js';
 
-const url = process.env.DB_URL;
-const urlOrParts = url
-  ? { url }
-  : {
-      host: process.env.DB_HOSTNAME || 'database',
-      port: Number.parseInt(process.env.DB_PORT || '5432'),
-      username: process.env.DB_USERNAME || 'postgres',
-      password: process.env.DB_PASSWORD || 'postgres',
-      database: process.env.DB_DATABASE_NAME || 'immich',
-    };
+let url = process.env.DB_URL;
+if (!url) {
+  const host = process.env.DB_HOSTNAME || 'database';
+  const port = Number.parseInt(process.env.DB_PORT || '5432');
+  const username = process.env.DB_USERNAME || 'postgres';
+  const password = process.env.DB_PASSWORD || 'postgres';
+  const database = process.env.DB_DATABASE_NAME || 'immich';
+  url = `postgres://${username}:${password}@${host}:${port}/${database}`;
+  process.env.DB_URL = url;
+}
 
 /* eslint unicorn/prefer-module: "off" -- We can fix this when migrating to ESM*/
 export const databaseConfig: PostgresConnectionOptions = {
@@ -23,7 +23,7 @@ export const databaseConfig: PostgresConnectionOptions = {
   synchronize: false,
   connectTimeoutMS: 10_000, // 10 seconds
   parseInt8: true,
-  ...urlOrParts,
+  url,
 };
 
 /**

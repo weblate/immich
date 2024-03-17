@@ -241,29 +241,26 @@ export class AssetService {
   async get(auth: AuthDto, id: string): Promise<AssetResponseDto | SanitizedAssetResponseDto> {
     await this.access.requirePermission(auth, Permission.ASSET_READ, id);
 
-    const asset = await this.assetRepository.getById(
-      id,
-      {
-        exifInfo: true,
-        tags: true,
-        sharedLinks: true,
-        smartInfo: true,
-        owner: true,
-        faces: {
-          person: true,
-        },
-        stack: {
+    const asset = await this.assetRepository.getById(id, {
+      exifInfo: true,
+      tags: true,
+      sharedLinks: true,
+      smartInfo: true,
+      owner: true,
+      faces: {
+        include: { person: true },
+        orderBy: { boundingBoxX1: 'asc' },
+      },
+      stack: {
+        include: {
           assets: {
-            exifInfo: true,
+            include: {
+              exifInfo: true,
+            },
           },
         },
       },
-      {
-        faces: {
-          boundingBoxX1: 'ASC',
-        },
-      },
-    );
+    });
 
     if (!asset) {
       throw new BadRequestException('Asset not found');
@@ -292,16 +289,7 @@ export class AssetService {
     const { description, dateTimeOriginal, latitude, longitude, ...rest } = dto;
     await this.updateMetadata({ id, description, dateTimeOriginal, latitude, longitude });
 
-    await this.assetRepository.update({ id, ...rest });
-    const asset = await this.assetRepository.getById(id, {
-      exifInfo: true,
-      owner: true,
-      smartInfo: true,
-      tags: true,
-      faces: {
-        person: true,
-      },
-    });
+    const asset = await this.assetRepository.update({ id, ...rest });
     if (!asset) {
       throw new BadRequestException('Asset not found');
     }
@@ -315,7 +303,7 @@ export class AssetService {
     // TODO: refactor this logic into separate API calls POST /stack, PUT /stack, etc.
     const stackIdsToCheckForDelete: string[] = [];
     if (removeParent) {
-      (options as Partial<AssetEntity>).stack = null;
+      (options as Partial<AssetEntity>).stackId = null; // i hate this
       const assets = await this.assetRepository.getByIds(ids, { stack: true });
       stackIdsToCheckForDelete.push(...new Set(assets.filter((a) => !!a.stackId).map((a) => a.stackId!)));
       // This updates the updatedAt column of the parents to indicate that one of its children is removed
@@ -327,14 +315,16 @@ export class AssetService {
     } else if (options.stackParentId) {
       //Creating new stack if parent doesn't have one already. If it does, then we add to the existing stack
       await this.access.requirePermission(auth, Permission.ASSET_UPDATE, options.stackParentId);
-      const primaryAsset = await this.assetRepository.getById(options.stackParentId, { stack: { assets: true } });
+      const primaryAsset = await this.assetRepository.getById(options.stackParentId, {
+        stack: { include: { assets: true } },
+      });
       if (!primaryAsset) {
         throw new BadRequestException('Asset not found for given stackParentId');
       }
       let stack = primaryAsset.stack;
 
       ids.push(options.stackParentId);
-      const assets = await this.assetRepository.getByIds(ids, { stack: { assets: true } });
+      const assets = await this.assetRepository.getByIds(ids, { stack: { include: { assets: true } } });
       stackIdsToCheckForDelete.push(
         ...new Set(assets.filter((a) => !!a.stackId && stack?.id !== a.stackId).map((a) => a.stackId!)),
       );
@@ -398,10 +388,10 @@ export class AssetService {
 
     const asset = await this.assetRepository.getById(id, {
       faces: {
-        person: true,
+        include: { person: true },
       },
       library: true,
-      stack: { assets: true },
+      stack: { include: { assets: true } },
       exifInfo: true,
     });
 
@@ -466,11 +456,11 @@ export class AssetService {
     const childIds: string[] = [];
     const oldParent = await this.assetRepository.getById(oldParentId, {
       faces: {
-        person: true,
+        include: { person: true },
       },
       library: true,
       stack: {
-        assets: true,
+        include: { assets: true },
       },
     });
     if (!oldParent?.stackId) {

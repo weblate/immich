@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { SystemConfigCore } from 'src/cores/system-config.core';
 import { mapAsset } from 'src/dtos/asset-response.dto';
 import { AuthDto } from 'src/dtos/auth.dto';
-import { DuplicateResponseDto, mapDuplicateResponse } from 'src/dtos/duplicate.dto';
+import { DuplicateResponseDto } from 'src/dtos/duplicate.dto';
 import { AssetEntity } from 'src/entities/asset.entity';
 import { IAssetRepository, WithoutProperty } from 'src/interfaces/asset.interface';
 import { ICryptoRepository } from 'src/interfaces/crypto.interface';
@@ -37,9 +37,8 @@ export class DuplicateService {
   }
 
   async getDuplicates(auth: AuthDto): Promise<DuplicateResponseDto[]> {
-    const res = await this.assetRepository.getDuplicates({ userIds: [auth.user.id] });
-
-    return mapDuplicateResponse(res.map((a) => mapAsset(a, { auth })));
+    const res = await this.assetRepository.getDuplicates([auth.user.id]);
+    return res.map(({ duplicateId, assets }) => ({ duplicateId, assets: assets.map((a) => mapAsset(a, { auth })) }));
   }
 
   async handleQueueSearchDuplicates({ force }: IBaseJob): Promise<JobStatus> {
