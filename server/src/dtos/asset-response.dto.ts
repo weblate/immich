@@ -1,3 +1,4 @@
+import { Optional } from '@nestjs/common';
 import { ApiProperty } from '@nestjs/swagger';
 import { PropertyLifecycle } from 'src/decorators';
 import { AuthDto } from 'src/dtos/auth.dto';
@@ -43,16 +44,15 @@ export class AssetResponseDto extends SanitizedAssetResponseDto {
   people?: PersonWithFacesResponseDto[];
   /**base64 encoded sha1 hash */
   checksum!: string;
-  stackParentId?: string | null;
-  stack?: AssetResponseDto[];
-  @ApiProperty({ type: 'integer' })
-  stackCount!: number | null;
+  stackId?: string;
+  @ApiProperty({ type: 'integer', default: 0 })
+  @Optional()
+  stackCount?: number;
   duplicateId?: string | null;
 }
 
 export type AssetMapOptions = {
   stripMetadata?: boolean;
-  withStack?: boolean;
   auth?: AuthDto;
 };
 
@@ -75,7 +75,7 @@ const peopleWithFaces = (faces: AssetFaceEntity[]): PersonWithFacesResponseDto[]
 };
 
 export function mapAsset(entity: AssetEntity, options: AssetMapOptions = {}): AssetResponseDto {
-  const { stripMetadata = false, withStack = false } = options;
+  const { stripMetadata = false } = options;
 
   if (stripMetadata) {
     const sanitizedAssetResponse: SanitizedAssetResponseDto = {
@@ -117,13 +117,8 @@ export function mapAsset(entity: AssetEntity, options: AssetMapOptions = {}): As
     tags: entity.tags?.map(mapTag),
     people: peopleWithFaces(entity.faces),
     checksum: entity.checksum.toString('base64'),
-    stackParentId: withStack ? entity.stack?.primaryAssetId : undefined,
-    stack: withStack
-      ? entity.stack?.assets
-          .filter((a) => a.id !== entity.stack?.primaryAssetId)
-          .map((a) => mapAsset(a, { stripMetadata, auth: options.auth }))
-      : undefined,
-    stackCount: entity.stack?.assets?.length ?? null,
+    stackId: entity.stackId ?? undefined,
+    stackCount: entity.stack?.assets?.length,
     isOffline: entity.isOffline,
     hasMetadata: true,
     duplicateId: entity.duplicateId,

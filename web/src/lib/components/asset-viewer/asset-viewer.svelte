@@ -9,7 +9,6 @@
   import { isShowDetail, showDeleteModal } from '$lib/stores/preferences.store';
   import { featureFlags } from '$lib/stores/server-config.store';
   import { SlideshowNavigation, SlideshowState, slideshowStore } from '$lib/stores/slideshow.store';
-  import { stackAssetsStore } from '$lib/stores/stacked-asset.store';
   import { user } from '$lib/stores/user.store';
   import { getAssetJobMessage, getSharedLink, handlePromiseError, isSharedLink } from '$lib/utils';
   import { addAssetsToAlbum, addAssetsToNewAlbum, downloadFile, unstackAssets } from '$lib/utils/asset-utils';
@@ -33,6 +32,7 @@
     type ActivityResponseDto,
     type AlbumResponseDto,
     type AssetResponseDto,
+    getStack,
   } from '@immich/sdk';
   import { mdiChevronLeft, mdiChevronRight, mdiImageBrokenVariant } from '@mdi/js';
   import { createEventDispatcher, onDestroy, onMount } from 'svelte';
@@ -102,23 +102,22 @@
   let unsubscribe: () => void;
   $: isFullScreen = fullscreenElement !== null;
 
-  $: {
-    if (asset.stackCount && asset.stack) {
-      $stackAssetsStore = asset.stack;
-      $stackAssetsStore = [...$stackAssetsStore, asset].sort(
-        (a, b) => new Date(b.fileCreatedAt).getTime() - new Date(a.fileCreatedAt).getTime(),
-      );
+  let stackAssets: AssetResponseDto[];
 
-      // if its a stack, add the next stack image in addition to the next asset
-      if (asset.stackCount > 1) {
-        preloadAssets.push($stackAssetsStore[1]);
-      }
+  const refreshStackAssets = async () => {
+    if (!asset.stackId) {
+      stackAssets = [];
+      return;
     }
 
-    if (!$stackAssetsStore.map((a) => a.id).includes(asset.id)) {
-      $stackAssetsStore = [];
-    }
-  }
+    const stack = await getStack({ id: asset.stackId });
+    stackAssets = [
+      asset,
+      ...stack.assets.sort((a, b) => new Date(b.fileCreatedAt).getTime() - new Date(a.fileCreatedAt).getTime()),
+    ];
+  };
+
+  $: asset.stackId, handlePromiseError(refreshStackAssets());
 
   $: {
     if (album && !album.isActivityEnabled && numberOfComments === 0) {
@@ -224,15 +223,6 @@
     // TODO: Move to regular import once the package correctly supports ESM.
     const module = await import('copy-image-clipboard');
     canCopyImagesToClipboard = module.canCopyImagesToClipboard();
-
-    if (asset.stackCount && asset.stack) {
-      $stackAssetsStore = asset.stack;
-      $stackAssetsStore = [...$stackAssetsStore, asset].sort(
-        (a, b) => new Date(a.fileCreatedAt).getTime() - new Date(b.fileCreatedAt).getTime(),
-      );
-    } else {
-      $stackAssetsStore = [];
-    }
   });
 
   onDestroy(() => {
@@ -509,7 +499,7 @@
   };
 
   const handleUnstack = async () => {
-    const unstackedAssets = await unstackAssets($stackAssetsStore);
+    const unstackedAssets = await unstackAssets([asset]);
     if (unstackedAssets) {
       for (const asset of unstackedAssets) {
         dispatch('action', {
@@ -581,7 +571,7 @@
           showDownloadButton={shouldShowDownloadButton}
           showDetailButton={enableDetailPanel}
           showSlideshow={!!assetStore}
-          hasStackChildren={$stackAssetsStore.length > 0}
+          hasStackChildren={stackAssets.length > 0}
           showShareButton={shouldShowShareModal}
           on:back={closeViewer}
           on:showDetail={showDetailInfoHandler}
@@ -720,34 +710,34 @@
       </div>
     {/if}
 
-    {#if $stackAssetsStore.length > 0 && withStacked}
+    {#if stackAssets.length > 0 && withStacked}
       <div
         id="stack-slideshow"
         class="z-[1002] flex place-item-center place-content-center absolute bottom-0 w-full col-span-4 col-start-1 overflow-x-auto horizontal-scrollbar"
       >
         <div class="relative w-full whitespace-nowrap transition-all">
-          {#each $stackAssetsStore as stackedAsset, index (stackedAsset.id)}
+          {#each stackAssets as stackAsset, index (stackAsset.id)}
             <div
-              class="{stackedAsset.id == asset.id
+              class="{stackAsset.id == asset.id
                 ? '-translate-y-[1px]'
                 : '-translate-y-0'} inline-block px-1 transition-transform"
             >
               <Thumbnail
-                class="{stackedAsset.id == asset.id
+                class="{stackAsset.id == asset.id
                   ? 'bg-transparent border-2 border-white'
                   : 'bg-gray-700/40'} inline-block hover:bg-transparent"
-                asset={stackedAsset}
+                asset={stackAsset}
                 onClick={() => {
-                  asset = stackedAsset;
-                  preloadAssets = index + 1 >= $stackAssetsStore.length ? [] : [$stackAssetsStore[index + 1]];
+                  asset = stackAsset;
+                  preloadAssets = index + 1 >= stackAssets.length ? [] : [stackAssets[index + 1]];
                 }}
-                on:mouse-event={(e) => handleStackedAssetMouseEvent(e, stackedAsset)}
+                on:mouse-event={(e) => handleStackedAssetMouseEvent(e, stackAsset)}
                 readonly
-                thumbnailSize={stackedAsset.id == asset.id ? 65 : 60}
+                thumbnailSize={stackAsset.id == asset.id ? 65 : 60}
                 showStackedIcon={false}
               />
 
-              {#if stackedAsset.id == asset.id}
+              {#if stackAsset.id == asset.id}
                 <div class="w-full flex place-items-center place-content-center">
                   <div class="w-2 h-2 bg-white rounded-full flex mt-[2px]" />
                 </div>

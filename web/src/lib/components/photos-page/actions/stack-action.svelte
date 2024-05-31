@@ -1,9 +1,10 @@
 <script lang="ts">
-  import MenuOption from '$lib/components/shared-components/context-menu/menu-option.svelte';
   import { getAssetControlContext } from '$lib/components/photos-page/asset-select-control-bar.svelte';
-  import { mdiImageMinusOutline, mdiImageMultipleOutline } from '@mdi/js';
-  import { stackAssets, unstackAssets } from '$lib/utils/asset-utils';
+  import MenuOption from '$lib/components/shared-components/context-menu/menu-option.svelte';
   import type { OnStack, OnUnstack } from '$lib/utils/actions';
+  import { stackAssets, unstackAssets } from '$lib/utils/asset-utils';
+  import { deleteStacks } from '@immich/sdk';
+  import { mdiImageMinusOutline, mdiImageMultipleOutline } from '@mdi/js';
 
   export let unstack = false;
   export let onStack: OnStack | undefined;
@@ -22,9 +23,13 @@
 
   const handleUnstack = async () => {
     const selectedAssets = [...getOwnedAssets()];
-    if (selectedAssets.length !== 1) {
+    const stackIds = selectedAssets.map((asset) => asset.stackId).filter((stackId): stackId is string => !!stackId);
+    if (stackIds.length === 0) {
       return;
     }
+
+    await deleteStacks({ bulkIdsDto: { ids: stackIds } });
+
     const { stack } = selectedAssets[0];
     if (!stack) {
       return;
