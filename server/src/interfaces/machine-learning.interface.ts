@@ -63,17 +63,17 @@ export interface FacialRecognitionOptions {
   minScore: number;
 }
 
-export interface ClipVisualRequest extends BaseMachineLearningRequest {
+export interface ClipVisualRequest extends BaseMachineLearningRequest, VisionModelInput {
   modelTask: ModelTask.SEARCH;
   modelType: ModelType.VISUAL;
 }
 
-export interface ClipTextualRequest extends BaseMachineLearningRequest {
+export interface ClipTextualRequest extends BaseMachineLearningRequest, TextModelInput {
   modelTask: ModelTask.SEARCH;
   modelType: ModelType.TEXTUAL;
 }
 
-export interface FacialRecognitionRequest extends BaseMachineLearningRequest {
+export interface FacialRecognitionRequest extends BaseMachineLearningRequest, VisionModelInput {
   minScore: number;
   modelTask: ModelTask.FACIAL_RECOGNITION;
   modelType: ModelType.PIPELINE;
@@ -82,11 +82,7 @@ export interface FacialRecognitionRequest extends BaseMachineLearningRequest {
 export type MachineLearningRequest = ClipVisualRequest | ClipTextualRequest | FacialRecognitionRequest;
 
 export interface IMachineLearningRepository {
-  encodeImage(url: string, input: VisionModelInput, config: ClipVisualOptions): Promise<Embedding>;
-  encodeText(url: string, input: TextModelInput, config: ClipTextualOptions): Promise<Embedding>;
-  detectFaces(
-    url: string,
-    input: VisionModelInput,
-    config: FacialRecognitionOptions,
-  ): Promise<FacialRecognitionResponse>;
+  encodeImage(url: string, imagePath: string, config: ClipVisualOptions): Promise<Embedding>;
+  encodeText(url: string, text: string, config: ClipTextualOptions): Promise<Embedding>;
+  detectFaces(url: string, imagePath: string, config: FacialRecognitionOptions): Promise<FacialRecognitionResponse>;
 }
