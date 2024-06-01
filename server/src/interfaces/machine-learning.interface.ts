@@ -1,14 +1,4 @@
-import { CLIPConfig, FacialRecognitionConfig } from 'src/dtos/model-config.dto';
-
 export const IMachineLearningRepository = 'IMachineLearningRepository';
-
-export interface VisionModelInput {
-  imagePath: string;
-}
-
-export interface TextModelInput {
-  text: string;
-}
 
 export interface BoundingBox {
   x1: number;
@@ -63,17 +53,20 @@ export interface FacialRecognitionOptions {
   minScore: number;
 }
 
-export interface ClipVisualRequest extends BaseMachineLearningRequest, VisionModelInput {
+export interface ClipVisualRequest extends BaseMachineLearningRequest {
+  imagePath: string;
   modelTask: ModelTask.SEARCH;
   modelType: ModelType.VISUAL;
 }
 
-export interface ClipTextualRequest extends BaseMachineLearningRequest, TextModelInput {
+export interface ClipTextualRequest extends BaseMachineLearningRequest {
   modelTask: ModelTask.SEARCH;
   modelType: ModelType.TEXTUAL;
+  text: string;
 }
 
-export interface FacialRecognitionRequest extends BaseMachineLearningRequest, VisionModelInput {
+export interface FacialRecognitionRequest extends BaseMachineLearningRequest {
+  imagePath: string;
   minScore: number;
   modelTask: ModelTask.FACIAL_RECOGNITION;
   modelType: ModelType.PIPELINE;
