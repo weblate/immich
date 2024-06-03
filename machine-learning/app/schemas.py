@@ -68,6 +68,8 @@ class Predictor(Protocol):
 
     def predict(self, inputs: Any, **model_kwargs: Any) -> Any: ...
 
+    def clear_cache(self) -> None: ...
+
 
 class HasProfiling(Protocol):
     profiling: dict[str, float]

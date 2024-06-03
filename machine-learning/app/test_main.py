@@ -517,6 +517,60 @@ class TestFaceRecognition:
         det_model.detect.assert_called_once()
         rec_model.get_feat.assert_called_once()
 
+    def test_pipeline_clears_cache(self, mocker: MockerFixture) -> None:
+        mock_rmtree = mocker.patch("app.models.base.rmtree", autospec=True)
+        mock_rmtree.avoids_symlink_attacks = True
+        mock_model_dir = mocker.MagicMock()
+        mock_cache_dir = mocker.MagicMock()
+        mock_cache_dir.__truediv__.side_effect = mock_model_dir
+        mocker.patch("app.models.base.Path", return_value=mock_cache_dir)
+        info = mocker.spy(log, "info")
+
+        face_detector = FaceDetector("buffalo_s", cache_dir="test_cache")
+        face_recognizer = FaceRecognizer("buffalo_l", cache_dir="test_cache")
+
+        pipeline = FacialRecognitionPipeline(face_detector, face_recognizer)
+
+        pipeline.clear_cache()
+
+        mock_rmtree.assert_has_calls([mock.call(pipeline.det_model.cache_dir), mock.call(pipeline.rec_model.cache_dir)])
+        info.assert_has_calls(
+            [
+                mock.call(f"Cleared cache directory for model '{pipeline.det_model.model_name}'."),
+                mock.call(f"Cleared cache directory for model '{pipeline.rec_model.model_name}'."),
+            ]
+        )
+
+    def test_pipeline_skips_rec_model_if_already_cleared(self, mocker: MockerFixture) -> None:
+        mock_rmtree = mocker.patch("app.models.base.rmtree", autospec=True)
+        mock_rmtree.avoids_symlink_attacks = True
+        mock_model_path = mocker.MagicMock()
+        mock_model_path.exists.return_value = False
+        mock_model_path.is_dir.return_value = False
+        mock_model_path.is_file.return_value = False
+        mock_model_dir = mocker.MagicMock()
+        mock_model_dir.__truediv__.return_value = mock_model_path
+        mock_cache_dir = mocker.MagicMock()
+        mock_cache_dir.__truediv__.return_value = mock_model_dir
+        mocker.patch("app.models.base.Path", return_value=mock_cache_dir)
+        info = mocker.spy(log, "info")
+
+        face_detector = FaceDetector("buffalo_s", min_score=0.0, cache_dir="test_cache")
+        face_recognizer = FaceRecognizer("buffalo_s", cache_dir="test_cache")
+
+        pipeline = FacialRecognitionPipeline(face_detector, face_recognizer)
+
+        pipeline.clear_cache()
+
+        mock_model_path.is_file.assert_called_once()
+        mock_rmtree.assert_called_once_with(pipeline.det_model.cache_dir)
+        msg = "Setting 'buffalo_s' execution providers to ['CPUExecutionProvider'], in descending order of preference"
+        assert info.call_args_list == [
+            mock.call(msg),
+            mock.call(msg),
+            mock.call(f"Cleared cache directory for model '{pipeline.det_model.model_name}'."),
+        ]
+
 
 @pytest.mark.asyncio
 class TestCache:

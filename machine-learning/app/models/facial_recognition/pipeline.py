@@ -25,9 +25,14 @@ class FacialRecognitionPipeline:
 
         detected_faces: DetectedFaces = self.det_model.predict(inputs, **kwargs)
         embeddings: NDArray[np.float32] = self.rec_model.predict(inputs, faces=detected_faces, **kwargs)
-        return self.postprocess(inputs, detected_faces, embeddings)
+        return self._postprocess(inputs, detected_faces, embeddings)
 
-    def postprocess(
+    def clear_cache(self) -> None:
+        self.det_model.clear_cache()
+        if self.rec_model.cached:
+            self.rec_model.clear_cache()
+
+    def _postprocess(
         self, image: NDArray[np.uint8], faces: DetectedFaces, embeddings: NDArray[np.float32]
     ) -> FacialRecognitionResponse:
         height, width, _ = image.shape
