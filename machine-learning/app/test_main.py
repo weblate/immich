@@ -445,9 +445,9 @@ class TestFaceRecognition:
         faces = face_detector.predict(cv_image)
 
         assert isinstance(faces, dict)
-        assert "boxes" in faces and isinstance(faces["boxes"], np.ndarray)
-        assert "landmarks" in faces and isinstance(faces["landmarks"], np.ndarray)
-        assert "scores" in faces and isinstance(faces["scores"], np.ndarray)
+        assert isinstance(faces.get("boxes", None), np.ndarray)
+        assert isinstance(faces.get("landmarks", None), np.ndarray)
+        assert isinstance(faces.get("scores", None), np.ndarray)
         assert np.equal(faces["boxes"], bbox).all()
         assert np.equal(faces["landmarks"], kpss).all()
         assert np.equal(faces["scores"], scores).all()
@@ -503,9 +503,9 @@ class TestFaceRecognition:
         response = pipeline.predict(cv_image)
 
         assert isinstance(response, dict)
-        assert "imageHeight" in response and isinstance(response["imageHeight"], int)
-        assert "imageWidth" in response and isinstance(response["imageWidth"], int)
-        assert "faces" in response and isinstance(response["faces"], list)
+        assert isinstance(response.get("imageHeight", None), int)
+        assert isinstance(response.get("imageWidth", None), int)
+        assert isinstance(response.get("faces", None), list)
         assert len(response["faces"]) == num_faces
         for face in response["faces"]:
             assert "boundingBox" in face and isinstance(face["boundingBox"], dict)
