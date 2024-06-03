@@ -8,12 +8,12 @@ from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from functools import partial
 from typing import Any, AsyncGenerator, Callable, Iterator
+from zipfile import BadZipFile
 
 import orjson
 from fastapi import Depends, FastAPI, Form, HTTPException, UploadFile
 from fastapi.responses import ORJSONResponse
 from onnxruntime.capi.onnxruntime_pybind11_state import InvalidProtobuf, NoSuchFile
-from zipfile import BadZipFile
 from starlette.formparsers import MultiPartParser
 
 from .config import PreloadModelData, log, settings

@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, NamedTuple, Protocol, TypedDict, TypeGuard
+from typing import Any, Protocol, TypedDict, TypeGuard
 
 import numpy as np
 import numpy.typing as npt

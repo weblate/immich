@@ -7,8 +7,6 @@ from types import SimpleNamespace
 from typing import Any, Callable
 from unittest import mock
 
-from app.models.facial_recognition.detection import FaceDetector
-from app.models.facial_recognition.pipeline import FacialRecognitionPipeline
 import cv2
 import numpy as np
 import onnxruntime as ort
@@ -21,6 +19,8 @@ from pytest_mock import MockerFixture
 from app.main import load, preload_models
 from app.models.clip.textual import MClipTextualEncoder, OpenClipTextualEncoder
 from app.models.clip.visual import OpenClipVisualEncoder
+from app.models.facial_recognition.detection import FaceDetector
+from app.models.facial_recognition.pipeline import FacialRecognitionPipeline
 from app.models.facial_recognition.recognition import FaceRecognizer
 
 from .config import Settings, log, settings
